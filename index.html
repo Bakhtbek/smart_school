@@ -3,81 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ақылды Мектеп - QR Сабаққа қатысу</title>
+    <title>Ақылды Мектеп - QR Түгендеу</title>
+    <!-- QR кодты сканерлейтін ресми кітапхана -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
-            background-color: #f4f6f9;
+            background-color: #f0f4f8;
             margin: 0;
             padding: 20px;
         }
         .container {
-            max-width: 500px;
-            margin: 0 auto;
+            max-width: 450px;
+            margin: 30px auto;
             background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
-        h1 { color: #2c3e50; font-size: 24px; }
+        h1 { color: #1a365d; font-size: 24px; margin-bottom: 5px; }
+        p { color: #718096; font-size: 14px; margin-bottom: 25px; }
         #reader {
             width: 100%;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            margin-top: 20px;
+            border: 2px solid #e2e8f0 !important;
         }
         #result {
-            margin-top: 20px;
-            font-size: 18px;
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: bold;
-            color: #27ae60;
+            display: none; /* Әзірге жасыру */
         }
+        .success { background-color: #c6f6d5; color: #22543d; }
+        .loading { background-color: #feebc8; color: #744210; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Ақылды Мектеп: QR Түгендеу</h1>
-    <p>Мұғалімдегі немесе сыныптағы QR-кодты камераға жақындатыңыз</p>
+    <h1>Ақылды Мектеп</h1>
+    <p>Оқушының QR-кодын камераға жақындатыңыз</p>
     
+    <!-- Камера экраны -->
     <div id="reader"></div>
     
+    <!-- Нәтиже шығатын орын -->
     <div id="result"></div>
 </div>
 
 <script>
-    // МАҢЫЗДЫ: Төмендегі сілтеменің орнына 1-қадамда алған өз Google Form сілтемеңізді қойыңыз!
-    // Тек соңындағы "=ТЕСТ" дегенді өшіріп, "=" белгісін қалдырыңыз.
-    const googleFormBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfXXXXXXXXXXXXX/formResponse?entry.123456789=";
+    // Сіздің Google Form-қа жіберетін өзгертілген дайын сілтемеңіз
+    const googleFormBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfTuXMQdlQpywG8zC2RQgHakS3gSH3tqn1wE8EHz5M8bbf-QQ/formResponse?entry.130233309=";
+    
+    let isScanning = true; // Қайта-қайта сканерлей бермеу үшін блок қою
 
     function onScanSuccess(decodedText, decodedResult) {
-        // Сканерлеу сәтті өткенде орындалатын функция
-        document.getElementById('result').innerText = "Сәтті сканерленді: " + decodedText;
-        
-        // Google Form-қа деректі автоматты жіберу (Фондық режимде)
+        if (!isScanning) return; 
+        isScanning = false; // Сканерлеуді уақытша тоқтату
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = "block";
+        resultDiv.className = "loading";
+        resultDiv.innerText = "Тіркелуде: " + decodedText + "...";
+
+        // Google Form-қа деректі жіберу сілтемесін құрастыру
         const finalUrl = googleFormBaseUrl + encodeURIComponent(decodedText);
         
+        // Деректі фондық режимде (жасырын) Google кестеге жіберу
         fetch(finalUrl, {
             method: 'POST',
             mode: 'no-cors'
-        }).then(() => {
-            document.getElementById('result').innerText = "Қатысуыңыз тіркелді! Рахмет, " + decodedText;
-        }).catch(err => {
-            alert("Қателік кетті, қайта байқап көріңіз.");
-            console.error(err);
+        })
+        .then(() => {
+            resultDiv.className = "success";
+            resultDiv.innerText = "✓ Тіркелді! Рахмет: " + decodedText;
+            
+            // 3 секундтан кейін келесі оқушыны сканерлеуге мүмкіндік беру
+            setTimeout(() => {
+                resultDiv.style.display = "none";
+                isScanning = true;
+            }, 3000);
+        })
+        .catch(err => {
+            alert("Қате орын алды. Интернет байланысын тексеріңіз.");
+            isScanning = true;
         });
     }
 
     function onScanFailure(error) {
-        // Сканерлеу кезіндегі қателіктерді конзольге шығару (көбіне елемейміз)
-        console.warn(`QR қатесі: ${error}`);
+        // Камераның әр кадр сайынғы қатесін конзольге жасыру
     }
 
-    // Камераны іске қосу
+    // Камера параметрлері мен іске қосу
     let html5QrcodeScanner = new html5QrcodeScanner(
-        "reader", { fps: 10, qrbox: 250 });
+        "reader", { fps: 10, qrbox: { width: 250, height: 250 } }
+    );
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 </script>
 
