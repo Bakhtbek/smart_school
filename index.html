@@ -3,230 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ақылды Мектеп - QR Түгендеу Жүйесі</title>
-    <!-- Экранға QR-кодты автоматты шығаруға арналған тегін кітапхана -->
+    <title>Ақылды Мектеп - Онлайн Түгендеу</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            background-color: #f7fafc;
-            margin: 0;
-            padding: 0;
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f4f8; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        /* Компьютер экранындағы екі бөлікті стиль (Сол жақ QR, Оң жақ Тізім) */
+        .main-screen {
             display: flex;
+            width: 95%;
+            max-width: 1100px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin: 20px;
+        }
+        .left-qr {
+            flex: 1.2;
+            padding: 40px;
+            text-align: center;
+            border-right: 2px solid #edf2f7;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
         }
-        .container {
+        .right-list {
+            flex: 1;
+            padding: 40px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Телефондағы оқушы стилі */
+        .student-container {
+            display: none;
             background: white;
             padding: 30px;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
             width: 100%;
-            max-width: 480px;
+            max-width: 450px;
             text-align: center;
             margin: 20px;
         }
-        .logo-title {
-            color: #1a365d;
-            font-size: 26px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            color: #4a5568;
-            font-size: 14px;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
+
+        .logo-title { color: #1a365d; font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+        .subtitle { color: #4a5568; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
         
-        /* ЭКРАНДАҒЫ МҰҒАЛІМ РЕЖИМІ (Компьютер экранында көрінеді) */
-        #screen-view {
-            display: block;
-        }
-        .qr-box {
-            background: #edf2f7;
-            padding: 20px;
-            border-radius: 15px;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-        #qrcode {
-            padding: 10px;
-            background: white;
-            border-radius: 10px;
-            display: inline-block;
-        }
-        .btn {
-            background: #3182ce;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 15px;
-            font-weight: 600;
-            border-radius: 10px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.2s;
-            margin-top: 10px;
-        }
-        .btn:hover {
-            background: #2b6cb0;
-        }
+        .qr-box { background: #edf2f7; padding: 25px; border-radius: 15px; display: inline-block; margin-bottom: 20px; }
+        #qrcode { padding: 10px; background: white; border-radius: 10px; }
         
-        /* ТЕЛЕФОНДАҒЫ ОҚУШЫ РЕЖИМІ (Телефонмен сканерлегенде ашылады) */
-        #student-view {
-            display: none;
-        }
-        .form-group {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            color: #4a5568;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 13px 15px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 16px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        input[type="text"]:focus {
-            border-color: #3182ce;
-        }
+        /* Тізім стилі */
+        .list-title { font-size: 20px; color: #2d3748; font-weight: 600; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; display: flex; justify-content: space-between; }
+        .student-ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; max-height: 400px; flex-grow: 1; }
+        .student-li { background: white; padding: 12px 15px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); animation: fadeIn 0.5s ease; }
+        .student-time { font-size: 12px; color: #a0aec0; background: #edf2f7; padding: 3px 8px; border-radius: 15px; }
         
-        /* Хабарламалар стилі */
-        #message {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            display: none;
-        }
+        /* Батырмалар мен формалар */
+        .btn { background: #3182ce; color: white; border: none; padding: 12px 24px; font-size: 15px; font-weight: 600; border-radius: 10px; cursor: pointer; width: 100%; transition: background 0.2s; }
+        .btn:hover { background: #2b6cb0; }
+        .form-group { text-align: left; margin-bottom: 20px; }
+        label { display: block; color: #4a5568; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+        input[type="text"] { width: 100%; padding: 13px 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; outline: none; }
+        input[type="text"]:focus { border-color: #3182ce; }
+        
+        #message { margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: 600; display: none; }
         .success { background: #c6f6d5; color: #22543d; }
         .error { background: #fed7d7; color: #742a2a; }
         .info { background: #e2e8f0; color: #2d3748; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @media(max-width: 768px) { .main-screen { flex-direction: column; } .left-qr { border-right: none; border-bottom: 2px solid #edf2f7; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="logo-title">🏫 Ақылды Мектеп</div>
-    
-    <!-- 1-бөлім: Экран режимі (Компьютерде тұрады) -->
-    <div id="screen-view">
-        <div class="subtitle">Сыныпқа келген оқушылар телефон камерасы арқылы төмендегі QR-кодты сканерлеп, сабаққа қатысуын белгілейді.</div>
-        <div class="qr-box">
-            <!-- QR код осы жерде автоматты түрде жасалады -->
-            <div id="qrcode"></div>
+    <div class="main-screen" id="teacher-view">
+        <div class="left-qr">
+            <div class="logo-title">🏫 Ақылды Мектеп</div>
+            <div class="subtitle">Сыныпқа келген оқушылар телефон камерасымен бұл QR-кодты сканерлеп, сабаққа қатысуын белгілейді.</div>
+            <div class="qr-box">
+                <div id="qrcode"></div>
+            </div>
+            <p style="font-size: 12px; color: #718096; margin-top: 0;">Сайт сілтемесі автоматты түрде QR-кодқа айналды</p>
+            <button class="btn" style="font-size: 12px; padding: 8px; max-width: 200px;" onclick="forceStudentMode()">Телефон режимі (Тест)</button>
         </div>
-        <p style="font-size: 12px; color: #718096; margin-top: 0;">Сайт сілтемесі оқушылар үшін QR-кодқа айналдырылды</p>
-        <button class="btn" onclick="switchToStudentView()">Оқушы режимін тексеру (Тест)</button>
+        
+        <div class="right-list">
+            <div class="list-title">
+                <span>Келген оқушылар</span>
+                <span id="counter" style="background: #3182ce; color: white; padding: 2px 10px; border-radius: 20px; font-size: 14px;">0</span>
+            </div>
+            <ul class="student-ul" id="student-list">
+                <li style="color: #a0aec0; text-align: center; margin-top: 20px;">Тізім жүктелуде...</li>
+            </ul>
+        </div>
     </div>
 
-    <!-- 2-бөлім: Оқушы режимі (Сканерлегенде телефонда ашылады) -->
-    <div id="student-view">
-        <div class="subtitle">Сабаққа қатысуыңызды растау үшін аты-жөніңізді толық жазып, батырманы басыңыз.</div>
+    <div class="student-container" id="student-view">
+        <div class="logo-title">🏫 Тіркелу парақшасы</div>
+        <div class="subtitle">Сабаққа қатысуды растау үшін аты-жөніңізді жазып, батырманы басыңыз.</div>
         
         <div class="form-group">
-            <label for="student-name">Аты-жөніңіз (Тегіңіз бен Атыңыз):</label>
-            <input type="text" id="student-name" placeholder="Мысалы: Ахметов Ерлан" required>
+            <label for="student-name">Оқушының Аты-Жөні:</label>
+            <input type="text" id="student-name" placeholder="Мысалы: Саматов Нұрбол" required>
         </div>
         
-        <button class="btn" style="background: #48bb78;" onclick="submitAttendance()">Қатысуды Бекіту</button>
-        <button class="btn" style="background: #718096; font-size: 12px; padding: 6px; width: auto; margin-top: 15px;" onclick="switchToScreenView()">Экран режиміне қайту</button>
+        <button class="btn" style="background: #48bb78;" onclick="submitAttendance()">Қатысуды Растау</button>
+        <div id="message"></div>
     </div>
-    
-    <!-- Статус хабарламасы -->
-    <div id="message"></div>
-</div>
 
 <script>
-    // Сіздің дайын Google Form сілтемеңіз (Автоматты түрде өзгертілген нұсқасы)
+    // Сіз жіберген ресми Google Form және Sheets деректері енгізілді
     const googleFormBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfTuXMQdlQpywG8zC2RQgHakS3gSH3tqn1wE8EHz5M8bbf-QQ/formResponse?entry.130233309=";
+    const spreadsheetPubUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrQ8ujFxDZuUiSr6ebSRrcBcM2G_wlRYGRcYJATQ6lmqZzR-5801xL953-f50aPSO7oTmE-baz23JJ/pubhtml";
 
-    // Парақша жүктелгенде жұмыс істейтін логика
     window.onload = function() {
-        // Ағымдағы сайттың сілтемесін алу (GitHub Pages-те ашылғанда соның сілтемесін табады)
         let currentUrl = window.location.href.split('?')[0];
-        // Оқушыларға арналған арнайы сілтеме құрастыру (соңына белгі қойылады)
         let studentUrl = currentUrl + "?mode=student";
 
-        // Экран бетіне QR-кодты автоматты түрде сызып шығару
+        // Экранға QR-код шығару
         new QRCode(document.getElementById("qrcode"), {
-            text: studentUrl,
-            width: 200,
-            height: 200,
-            colorDark : "#1a365d",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
+            text: studentUrl, width: 220, height: 220, colorDark : "#1a365d", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
         });
 
-        // Егер сілтеме соңында ?mode=student болса (яғни телефонмен сканерлеп ашса)
-        // сайт автоматты түрде оқушыға атын жазатын форманы көрсетеді.
+        // Режимді тексеру
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'student') {
-            switchToStudentView();
+            document.getElementById('teacher-view').style.display = 'none';
+            document.getElementById('student-view').style.display = 'block';
+        } else {
+            // Компьютер экранында тізімді әр 3 секунд сайын жаңартып тұру
+            fetchAttendanceList();
+            setInterval(fetchAttendanceList, 3000);
         }
     };
 
-    // Экран ауыстыру функциялары
-    function switchToStudentView() {
-        document.getElementById('screen-view').style.display = 'none';
+    function forceStudentMode() {
+        document.getElementById('teacher-view').style.display = 'none';
         document.getElementById('student-view').style.display = 'block';
-        document.getElementById('message').style.display = 'none';
     }
 
-    function switchToScreenView() {
-        document.getElementById('screen-view').style.display = 'block';
-        document.getElementById('student-view').style.display = 'none';
-        document.getElementById('message').style.display = 'none';
+    // Жарияланған Google Sheets парақшасынан мәліметтерді нақты уақытта оқу
+    function fetchAttendanceList() {
+        // pubhtml сілтемесін тікелей CSV/мәтін ретінде өңдеу әдісі
+        const proxyUrl = spreadsheetPubUrl.replace('/pubhtml', '/pub?output=csv');
+
+        fetch(proxyUrl)
+        .then(res => res.text())
+        .then(csvText => {
+            // CSV жолдарын бөлу
+            const lines = csvText.split('\n');
+            const listUl = document.getElementById('student-list');
+            listUl.innerHTML = ""; // Ескі тізімді тазалау
+            
+            let count = 0;
+            
+            // Соңғы тіркелген оқушылар жоғарыда тұруы үшін циклді артынан бастаймыз
+            // i=0 тақырыптық жол (Timestamp, Оқушының аты-жөні) болғандықтан оны өткізіп жібереміз
+            for (let i = lines.length - 1; i > 0; i--) {
+                if (!lines[i].trim()) continue;
+                
+                // CSV форматындағы деректі үтір арқылы бөлеміз
+                const columns = lines[i].split(',');
+                if (columns.length < 2) continue;
+                
+                let rawTime = columns[0].replace(/"/g, ''); // Тырнақшаларды алып тастау
+                let name = columns[1].replace(/"/g, '');
+                
+                // Тек уақыт бөлігін алу (мысалы, "14:30:15")
+                let timeOnly = rawTime.split(' ')[1] || rawTime;
+
+                if(name.trim() === "") continue;
+
+                const li = document.createElement('li');
+                li.className = "student-li";
+                li.innerHTML = `<span>${name}</span> <span class="student-time">${timeOnly}</span>`;
+                listUl.appendChild(li);
+                count++;
+            }
+            
+            document.getElementById('counter').innerText = count;
+            if(count === 0) {
+                listUl.innerHTML = "<li style='color: #a0aec0; text-align: center; margin-top: 20px;'>Бүгін ешкім тіркелмеді</li>";
+            }
+        })
+        .catch(err => {
+            console.error("Кестені оқу қатесі:", err);
+            document.getElementById('student-list').innerHTML = "<li style='color: red; text-align: center;'>Деректерді жүктеу мүмкін болмады...</li>";
+        });
     }
 
-    // Мәліметті Google Sheets кестесіне жіберу
+    // Оқушы атын жіберу функциясы
     function submitAttendance() {
         const nameInput = document.getElementById('student-name');
         const name = nameInput.value.trim();
         const msgDiv = document.getElementById('message');
 
         if (name === "") {
-            msgDiv.className = "error";
-            msgDiv.innerText = "Өтініш, аты-жөніңізді жазыңыз!";
-            msgDiv.style.display = "block";
-            return;
+            msgDiv.className = "error"; msgDiv.innerText = "Аты-жөніңізді жазыңыз!"; msgDiv.style.display = "block"; return;
         }
 
-        msgDiv.className = "info";
-        msgDiv.innerText = "Жіберілуде, күте тұрыңыз...";
-        msgDiv.style.display = "block";
+        msgDiv.className = "info"; msgDiv.innerText = "Тіркелуде, күте тұрыңыз..."; msgDiv.style.display = "block";
 
-        // Соңғы жіберілетін сілтемені дайындау
         const finalUrl = googleFormBaseUrl + encodeURIComponent(name);
 
-        // Жасырын (фондық) режимде Google Form-қа деректі POST арқылы аттандыру
-        fetch(finalUrl, {
-            method: 'POST',
-            mode: 'no-cors'
-        })
+        fetch(finalUrl, { method: 'POST', mode: 'no-cors' })
         .then(() => {
             msgDiv.className = "success";
             msgDiv.innerText = "✓ Тіркелді! Рахмет, " + name;
-            nameInput.value = ""; // Мәтін енгізетін жерді тазалау
+            nameInput.value = "";
         })
         .catch(err => {
-            msgDiv.className = "error";
-            msgDiv.innerText = "Қате шықты. Интернет байланысын тексеріңіз.";
-            console.error(err);
+            msgDiv.className = "error"; msgDiv.innerText = "Қате! Интернетті тексеріңіз.";
         });
     }
 </script>
