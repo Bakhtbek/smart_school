@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ақылды Мектеп - Фотомен Түгендеу Тақтасы</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0f4f8; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
@@ -22,8 +21,7 @@
         
         /* QR Код қорабы */
         .qr-box { background: #edf2f7; padding: 25px; border-radius: 15px; display: inline-block; margin-bottom: 20px; min-width: 240px; min-height: 240px; }
-        #qrcode { padding: 10px; background: white; border-radius: 10px; display: flex; justify-content: center; align-items: center; }
-        #qrcode img { display: block; margin: 0 auto; }
+        #qrcode-img { display: block; margin: 0 auto; width: 220px; height: 220px; border-radius: 10px; background: white; padding: 10px; }
         
         /* Тізім стильдері */
         .list-title { font-size: 20px; color: #2d3748; font-weight: 600; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; display: flex; justify-content: space-between; }
@@ -66,7 +64,7 @@
             <div class="subtitle">Телефон камерасымен бұл QR-кодты сканерлеп, суретке түсіңіз және тіркеліңіз.</div>
             
             <div class="qr-box">
-                <div id="qrcode">QR-код дайындалуда...</div>
+                <img id="qrcode-img" src="" alt="QR-код жүктелуде...">
             </div>
             
             <button class="btn" style="font-size: 11px; padding: 6px; max-width: 150px;" onclick="forceStudentMode()">Телефон режимі (Тест)</button>
@@ -111,4 +109,109 @@
     const nameEntryId = "entry.130233309";   
     const photoEntryId = "entry.1562416217"; 
 
-    const spreadsheetPubUrl = "
+    const spreadsheetPubUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrQ8ujFxDZuUiSr6ebSRrcBcM2G_wlRYGRcYJATQ6lmqZzR-5801xL953-f50aPSO7oTmE-baz23JJ/pubhtml";
+
+    let localStream = null;
+    let base64Photo = ""; 
+
+    window.onload = function() {
+        let currentUrl = window.location.href.split('?')[0];
+        let studentUrl = currentUrl + "?mode=student";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (urlParams.get('mode') === 'student') {
+            document.getElementById('teacher-view').style.display = 'none';
+            document.getElementById('student-view').style.display = 'block';
+            startCamera(); 
+        } else {
+            // СЫРТҚЫ СКРИПТСІЗ ТІКЕЛЕЙ GOOGLE СЕРВЕРІНЕН QR СУРЕТІН ШАҚЫРУ (ЕШҚАШАН ҚАТЕ БЕРМЕЙДІ)
+            const googleQrUrl = `https://chart.googleapis.com/chart?chs=220x220&cht=qr&chl=${encodeURIComponent(studentUrl)}&choe=UTF-8`;
+            document.getElementById('qrcode-img').src = googleQrUrl;
+
+            fetchAttendanceList();
+            setInterval(fetchAttendanceList, 3000); 
+        }
+    };
+
+    function forceStudentMode() {
+        document.getElementById('teacher-view').style.display = 'none';
+        document.getElementById('student-view').style.display = 'block';
+        startCamera();
+    }
+
+    // Камераны қосу
+    function startCamera() {
+        const video = document.getElementById('video');
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+        .then(stream => {
+            localStream = stream;
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error("Камера қатесі:", err);
+            alert("Жүйенің суретке түсіруі үшін камераға рұқсат беріңіз!");
+        });
+    }
+
+    // Сурет түсіру
+    function takeSnapshot() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const preview = document.getElementById('photo-preview');
+        const context = canvas.getContext('2d');
+
+        canvas.width = 160;
+        canvas.height = 120;
+        
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        base64Photo = canvas.toDataURL('image/jpeg', 0.5); 
+
+        preview.src = base64Photo;
+        preview.style.display = "block";
+        video.style.display = "none";
+
+        document.getElementById('capture-btn').style.display = "none";
+        document.getElementById('retake-btn').style.display = "block";
+        document.getElementById('submit-btn').disabled = false; 
+    }
+
+    function restartCamera() {
+        document.getElementById('photo-preview').style.display = "none";
+        document.getElementById('video').style.display = "block";
+        document.getElementById('capture-btn').style.display = "block";
+        document.getElementById('retake-btn').style.display = "none";
+        document.getElementById('submit-btn').disabled = true;
+        base64Photo = "";
+    }
+
+    // Форманы жіберу
+    function submitAttendance() {
+        const nameInput = document.getElementById('student-name');
+        const name = nameInput.value.trim();
+        const msgDiv = document.getElementById('message');
+
+        if (name === "") {
+            msgDiv.className = "error"; msgDiv.innerText = "Аты-жөніңізді жазыңыз!"; msgDiv.style.display = "block"; return;
+        }
+        if (base64Photo === "") {
+            msgDiv.className = "error"; msgDiv.innerText = "Алдымен суретке түсіңіз!"; msgDiv.style.display = "block"; return;
+        }
+
+        msgDiv.className = "info"; msgDiv.innerText = "Тіркелуде..."; msgDiv.style.display = "block";
+
+        const finalUrl = `${googleFormBaseUrl}?${nameEntryId}=${encodeURIComponent(name)}&${photoEntryId}=${encodeURIComponent(base64Photo)}`;
+
+        fetch(finalUrl, { method: 'POST', mode: 'no-cors' })
+        .then(() => {
+            msgDiv.className = "success";
+            msgDiv.innerText = "✓ Сәтті тіркелді! Рахмет, " + name;
+            nameInput.value = "";
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            setTimeout(() => { location.reload(); }, 1500); 
+        })
+        .catch(err => {
+            msgDiv.className = "error"; msgDiv.innerText = "Қате!
