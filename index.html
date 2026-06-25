@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ақылды Мектеп - QR Сабаққа қатысу</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; font-size: 24px; }
+        #reader {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Ақылды Мектеп: QR Түгендеу</h1>
+    <p>Мұғалімдегі немесе сыныптағы QR-кодты камераға жақындатыңыз</p>
+    
+    <div id="reader"></div>
+    
+    <div id="result"></div>
+</div>
+
+<script>
+    // МАҢЫЗДЫ: Төмендегі сілтеменің орнына 1-қадамда алған өз Google Form сілтемеңізді қойыңыз!
+    // Тек соңындағы "=ТЕСТ" дегенді өшіріп, "=" белгісін қалдырыңыз.
+    const googleFormBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfXXXXXXXXXXXXX/formResponse?entry.123456789=";
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Сканерлеу сәтті өткенде орындалатын функция
+        document.getElementById('result').innerText = "Сәтті сканерленді: " + decodedText;
+        
+        // Google Form-қа деректі автоматты жіберу (Фондық режимде)
+        const finalUrl = googleFormBaseUrl + encodeURIComponent(decodedText);
+        
+        fetch(finalUrl, {
+            method: 'POST',
+            mode: 'no-cors'
+        }).then(() => {
+            document.getElementById('result').innerText = "Қатысуыңыз тіркелді! Рахмет, " + decodedText;
+        }).catch(err => {
+            alert("Қателік кетті, қайта байқап көріңіз.");
+            console.error(err);
+        });
+    }
+
+    function onScanFailure(error) {
+        // Сканерлеу кезіндегі қателіктерді конзольге шығару (көбіне елемейміз)
+        console.warn(`QR қатесі: ${error}`);
+    }
+
+    // Камераны іске қосу
+    let html5QrcodeScanner = new html5QrcodeScanner(
+        "reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+</script>
+
+</body>
+</html>
